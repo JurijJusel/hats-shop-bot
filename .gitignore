@@ -16,7 +16,7 @@ wheels/
 data
 
 #files
-#config.py
+config.py
 
 # Log files
 logs/
