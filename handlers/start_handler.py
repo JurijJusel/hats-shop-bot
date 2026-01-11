@@ -40,9 +40,9 @@ async def text_show_products(update: Update, context: ContextTypes.DEFAULT_TYPE)
         prod_id, name, description, price, photo = prod
 
         caption = (
-            f"{name}\n\n"
-            f"Info: {description}\n\n"
-            f"Kaina: {price:.2f}€"
+            f"*** {name} ***\n\n"
+            f"📝  Info: {description}\n\n"
+            f"💰 Kaina: {price:.2f}€"
         )
 
         keyboard = [[InlineKeyboardButton("🛒 Į krepšelį", callback_data=f"addcart_{prod_id}")]]

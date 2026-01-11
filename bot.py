@@ -11,9 +11,10 @@ from admin.admin_add_products import (conv_add_product,
                                 admin_show_products,
                                 activate_hat,
                                 delete_hat)
-from handlers.user_checkout import conversation_handler, payment_confirmed
 from users.user_help import user_help
 from users.user_orders import my_orders
+from handlers.admin_orders_handler import admin_shipped_conv_handler
+from handlers.user_checkout import conversation_handler, payment_confirmed
 from handlers.admin_orders_handler import admin_paid, admin_shipped
 from handlers.cart_handler import show_cart, remove_from_cart, add_to_cart
 from handlers.start_handler import (start,
@@ -57,6 +58,7 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("show_users", admin_show_users))
 
     # Admino užsakymų mygtukai („APMOKĖTA“ / „IŠSIŲSTA“)
+    app.add_handler(admin_shipped_conv_handler)
     app.add_handler(CallbackQueryHandler(admin_paid, pattern=r"admin_paid_\d+"))
     app.add_handler(CallbackQueryHandler(admin_shipped, pattern=r"admin_shipped_\d+"))
 
