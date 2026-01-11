@@ -217,7 +217,7 @@ async def save_to_db(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(
             chat_id=user_id,
             text=f"📦 Jūsų užsakymas #{order_id} IŠSIŲSTAS! 🚚\n"
-                 f"Tracking: {tracking}\n\n"
+                 f"Sekimo numeris: {tracking}\n\n"
                  f"Ačiū kad pirkote!\n\n"
                  f"📋 Peržiūrėti užsakymus: /my_orders"
         )
@@ -255,7 +255,7 @@ async def save_to_db_callback(query, context: ContextTypes.DEFAULT_TYPE):
     await query.message.reply_text(
         f"✅ *Užsakymas #{order_id} išsiųstas!*\n\n"
         f"📦 Tracking: `{tracking}`\n"
-        f"💳 Payment: {payment or '—'}\n"
+        f"💳 Payment info: {payment or '—'}\n"
         f"📝 Notes: {notes or '—'}",
         parse_mode="Markdown"
     )
