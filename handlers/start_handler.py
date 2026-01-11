@@ -6,7 +6,7 @@ from telegram import (Update,
 from telegram.ext import ContextTypes
 import sqlite3
 from config import DB_PATH
-from handlers.user_tracker import register_or_update_user
+from users.user_tracker import register_or_update_user
 
 
 # Fiksuotas klaviatūros meniu apacioje

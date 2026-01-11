@@ -29,12 +29,6 @@ async def checkout_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     return NAME
 
-# Checkout (name)
-#async def checkout_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-#    query = update.callback_query
-#    await query.answer()
-#    await query.message.reply_text("Įveskite savo VARDA:")
-#    return NAME
 
 # Checkout (phone) - SU MYGTUKU
 async def checkout_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -58,19 +52,6 @@ async def checkout_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     return PHONE
 
-## Checkout (phone)
-#async def checkout_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
-#    name = update.message.text
-
-#    if len(name) >= 30:
-#        await update.message.reply_text(
-#            "❌ Vardas per ilgas! Maksimalus ilgis - 30 simbolių.\n"
-#            "Įveskite trumpesnį VARDĄ:"
-#        )
-#        return NAME
-#    context.user_data['name'] = update.message.text
-#    await update.message.reply_text("Įveskite savo TELEFONO numerį:")
-#    return PHONE
 
 # Checkout (email) - SU MYGTUKU
 async def checkout_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -94,19 +75,6 @@ async def checkout_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     return EMAIL
 
-## Checkout (email)
-#async def checkout_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
-#    phone = update.message.text
-
-#    if len(phone) >= 15:
-#        await update.message.reply_text(
-#            "❌ Telefono numeris per ilgas arba neteisingas!\n"
-#            "Maksimalus ilgis - 15 simbolių."
-#        )
-#        return PHONE
-#    context.user_data['phone'] = update.message.text
-#    await update.message.reply_text("Įveskite savo EL. PAŠTĄ:")
-#    return EMAIL
 
 # Checkout (city) - SU MYGTUKU
 async def checkout_email(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -130,19 +98,6 @@ async def checkout_email(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     return CITY
 
-## Checkout (city)
-#async def checkout_email(update: Update, context: ContextTypes.DEFAULT_TYPE):
-#    email = update.message.text
-
-#    if len(email) >= 40:
-#        await update.message.reply_text(
-#            "❌ El. paštas per ilgas! Maksimalus ilgis - 40 simbolių.\n"
-#            "Įveskite trumpesnį EL. PAŠTĄ:"
-#        )
-#        return EMAIL
-#    context.user_data['email'] = update.message.text
-#    await update.message.reply_text("Įveskite savo MIESTĄ:")
-#    return CITY
 
 # Checkout (info) - SU MYGTUKU
 async def checkout_city(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -170,25 +125,6 @@ async def checkout_city(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     return INFO
 
-## Checkout (info) + add order to DB
-#async def checkout_city(update: Update, context: ContextTypes.DEFAULT_TYPE):
-#    city = update.message.text
-
-#    if len(city) >= 30:
-#        await update.message.reply_text(
-#            "❌ Miesto pavadinimas per ilgas! Maksimalus ilgis - 30 simbolių.\n"
-#            "Įveskite trumpesnį MIESTĄ:"
-#        )
-#        return CITY
-#    context.user_data['city'] = update.message.text
-#    await update.message.reply_text(
-#        f"Papildoma informacija.\n"
-#        f"Cia galima parasyti pastabas dėl pristatymo.\n"
-#        f"arba tikslu vienipak adresa is kur jus pasiimsite siunta \n"
-#        f"tai pagreitins uzsakymo apdorojima ir greita issiuntima.\n"
-#        f"Jei nėra – parašykite ,-' ."
-#        )
-#    return INFO
 
 # Checkout (info) + add order to DB
 async def checkout_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -317,12 +253,6 @@ async def order_cancel_button(update: Update, context: ContextTypes.DEFAULT_TYPE
     await query.message.edit_text("❌ Užsakymas atšauktas.")
     return ConversationHandler.END
 
-#async def order_cancel_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
-#    query = update.callback_query
-#    await query.answer()
-#    await query.message.edit_text("❌ Užsakymas atšauktas.")
-#    return ConversationHandler.END
-
 # Payment confirmed handler (USER spaudžia "APMOKĖTA")
 async def payment_confirmed(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -348,41 +278,29 @@ async def payment_confirmed(update: Update, context: ContextTypes.DEFAULT_TYPE):
     for admin_id in ADMINS:
         await context.bot.send_message(chat_id=admin_id, text=admin_msg)
 
-## Checkout ConversationHandler
-#conversation_handler = ConversationHandler(
-#    entry_points=[CallbackQueryHandler(checkout_start, pattern="checkout")],
-#    states={
-#        NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, checkout_name)],
-#        PHONE: [MessageHandler(filters.TEXT & ~filters.COMMAND, checkout_phone)],
-#        EMAIL: [MessageHandler(filters.TEXT & ~filters.COMMAND, checkout_email)],
-#        CITY: [MessageHandler(filters.TEXT & ~filters.COMMAND, checkout_city)],
-#        INFO: [MessageHandler(filters.TEXT & ~filters.COMMAND, checkout_info)],
-#    },
-#    fallbacks=[CommandHandler("cancel", order_cancel)],
-#)
 
 conversation_handler = ConversationHandler(
     entry_points=[CallbackQueryHandler(checkout_start, pattern="checkout")],
     states={
         NAME: [
             MessageHandler(filters.TEXT & ~filters.COMMAND, checkout_name),
-            CallbackQueryHandler(order_cancel_button, pattern="cancel_order")  # PRIDĖTI!
+            CallbackQueryHandler(order_cancel_button, pattern="cancel_order")
         ],
         PHONE: [
             MessageHandler(filters.TEXT & ~filters.COMMAND, checkout_phone),
-            CallbackQueryHandler(order_cancel_button, pattern="cancel_order")  # PRIDĖTI!
+            CallbackQueryHandler(order_cancel_button, pattern="cancel_order")
         ],
         EMAIL: [
             MessageHandler(filters.TEXT & ~filters.COMMAND, checkout_email),
-            CallbackQueryHandler(order_cancel_button, pattern="cancel_order")  # PRIDĖTI!
+            CallbackQueryHandler(order_cancel_button, pattern="cancel_order")
         ],
         CITY: [
             MessageHandler(filters.TEXT & ~filters.COMMAND, checkout_city),
-            CallbackQueryHandler(order_cancel_button, pattern="cancel_order")  # PRIDĖTI!
+            CallbackQueryHandler(order_cancel_button, pattern="cancel_order")
         ],
         INFO: [
             MessageHandler(filters.TEXT & ~filters.COMMAND, checkout_info),
-            CallbackQueryHandler(order_cancel_button, pattern="cancel_order")  # PRIDĖTI!
+            CallbackQueryHandler(order_cancel_button, pattern="cancel_order")
         ],
     },
     fallbacks=[
