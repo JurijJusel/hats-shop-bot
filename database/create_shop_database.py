@@ -1,8 +1,15 @@
 import sqlite3
+import sys
+from pathlib import Path
+
+ROOT_DIR = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT_DIR))
+
+from config import DB_PATH
 
 
 def init_database():
-    conn = sqlite3.connect("shop.db")
+    conn = sqlite3.connect(DB_PATH)  # "shop.db"
     cursor = conn.cursor()
 
     # Įjungiam foreign key palaikymą
@@ -84,7 +91,7 @@ def init_database():
         print(f" - {table[0]}")
 
     conn.close()
-    print("✅ Duomenų bazė paruošta!")
+    print("✅ Shop duomenų bazė paruošta!")
 
 
 if __name__ == "__main__":
