@@ -12,8 +12,8 @@ from admin.admin_add_products import (conv_add_product,
                                 activate_hat,
                                 delete_hat)
 from handlers.user_checkout import conversation_handler, payment_confirmed
-from handlers.user_help import user_help
-from handlers.user_orders import my_orders
+from users.user_help import user_help
+from users.user_orders import my_orders
 from handlers.admin_orders_handler import admin_paid, admin_shipped
 from handlers.cart_handler import show_cart, remove_from_cart, add_to_cart
 from handlers.start_handler import (start,
