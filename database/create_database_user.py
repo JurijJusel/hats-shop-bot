@@ -1,9 +1,15 @@
 import sqlite3
+import sys
+from pathlib import Path
+
+ROOT_DIR = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT_DIR))
+
 from config import DB_USERS_PATH
 
 
 def init_users_database():
-    conn = sqlite3.connect(DB_USERS_PATH)
+    conn = sqlite3.connect(DB_USERS_PATH)  # "users_info.db"
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -41,5 +47,8 @@ def init_users_database():
     print("✅ Users duomenų bazė paruošta!")
 
 
-if __name__ == "__main__":
+def main():
     init_users_database()
+
+if __name__ == "__main__":
+    main()

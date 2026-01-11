@@ -1,10 +1,15 @@
 import sqlite3
+import sys
+from pathlib import Path
 
-DB_PATH = "shop.db"
+ROOT_DIR = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT_DIR))
+
+from config import DB_PATH
 
 
 def count_products():
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH) # "shop.db"
     cursor = conn.cursor()
     cursor.execute("SELECT COUNT(*) FROM products")
     count = cursor.fetchone()[0]
