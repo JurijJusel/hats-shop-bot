@@ -12,7 +12,7 @@ async def my_orders(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Paimam visus vartotojo užsakymus
     cursor.execute("""
-        SELECT id, order_date, status, total_price
+        SELECT id, order_date, status, total_price, tracking_number
         FROM orders
         WHERE user_id=?
         ORDER BY id DESC
@@ -24,7 +24,7 @@ async def my_orders(update: Update, context: ContextTypes.DEFAULT_TYPE):
         conn.close()
         return
 
-    for order_id, order_date, status, total in orders:
+    for order_id, order_date, status, total, tracking_number in orders:
         # Gaunam prekes
         cursor.execute("""
             SELECT product_name, price_per_unit, photo_file_id
@@ -46,6 +46,7 @@ async def my_orders(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Tekstas
         text = f"{status_emoji} *Užsakymas #{order_id}*\n\n"
         text += f"📊 Statusas: {status}\n"
+        text += f"📦 Tracking: {tracking_number or '—'}\n"
         text += f"📅 {order_date[:10]}\n\n"
         text += f"💰 Suma: {total}€\n\n"
         text += f"🛍 Prekės:\n"
