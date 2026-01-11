@@ -16,7 +16,7 @@ async def show_orders_base(update: Update, context: ContextTypes.DEFAULT_TYPE, l
     if only_pending:
         # TIK neužbaigti užsakymai
         sql = """
-            SELECT id, user_name, phone, email, city, info, total_price, status
+            SELECT id, user_name, phone, email, city, info, total_price, status, tracking_number, payment_info, notes
             FROM orders
             WHERE status IN ('naujas', 'apmoketa', 'laukia apmokejimo', 'laukia patvirtinimo')
             ORDER BY id DESC
@@ -24,7 +24,7 @@ async def show_orders_base(update: Update, context: ContextTypes.DEFAULT_TYPE, l
     else:
         # VISI užsakymai
         sql = """
-            SELECT id, user_name, phone, email, city, info, total_price, status
+            SELECT id, user_name, phone, email, city, info, total_price, status, tracking_number, payment_info, notes
             FROM orders
             ORDER BY id DESC
         """
@@ -45,7 +45,7 @@ async def show_orders_base(update: Update, context: ContextTypes.DEFAULT_TYPE, l
         return
 
     for order in orders:
-        order_id, user_name, phone, email, city, info, total, status = order
+        order_id, user_name, phone, email, city, info, total, status, tracking, payment, notes = order
 
         # Gaunam prekes iš order_items
         cursor.execute("""
@@ -63,10 +63,17 @@ async def show_orders_base(update: Update, context: ContextTypes.DEFAULT_TYPE, l
                 items_text += f"  • {product_name} - {price} €\n"
 
         admin_text = f"🆕 Užsakymas #{order_id}\n\n" \
-                     f"Statusas: {status}\n\n" \
-                     f"👤 {user_name}\n📞 {phone}\n📧 {email}\n🏙 {city}\n📝 {info}" \
-                     f"{items_text}" \
-                     f"💰 Suma: {total} €"
+                    f"📊 Statusas: {status}\n" \
+                    f"📦 Tracking: {tracking or '—'}\n" \
+                    f"💳 Payment: {payment or '—'}\n" \
+                    f"📝 Notes: {notes or '—'}\n\n" \
+                    f"👤 {user_name}\n" \
+                    f"📞 {phone}\n" \
+                    f"📧 {email}\n" \
+                    f"🏙 {city}\n" \
+                    f"📝 Info: {info}\n\n" \
+                    f"{items_text}\n\n" \
+                    f"💰 Suma: {total} €"
 
         # Mygtukų logika pagal statusą
         keyboard_admin = []
@@ -93,3 +100,4 @@ async def admin_show_orders_10(update: Update, context: ContextTypes.DEFAULT_TYP
 # ADMIN neužbaigti užsakymai
 async def admin_show_orders_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await show_orders_base(update, context, limit=None, only_pending=True)
+
