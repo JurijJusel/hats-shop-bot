@@ -14,6 +14,7 @@ from admin.admin_add_products import (conv_add_product,
 from users.user_help import user_help
 from users.user_orders import my_orders
 from handlers.admin_orders_handler import admin_shipped_conv_handler
+from handlers.user_fallback import unknown_message
 from handlers.user_checkout import conversation_handler, payment_confirmed
 from handlers.admin_orders_handler import admin_paid, admin_shipped
 from handlers.cart_handler import show_cart, remove_from_cart, add_to_cart
@@ -61,6 +62,9 @@ if __name__ == "__main__":
     app.add_handler(admin_shipped_conv_handler)
     app.add_handler(CallbackQueryHandler(admin_paid, pattern=r"admin_paid_\d+"))
     app.add_handler(CallbackQueryHandler(admin_shipped, pattern=r"admin_shipped_\d+"))
+
+    # PASKUTINIS handler - fallback neatpažintoms žinutėms
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, unknown_message))
 
     print("Botas paleistas...")
     app.run_polling()
