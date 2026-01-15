@@ -31,8 +31,6 @@ async def admin_paid(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
     # Atnaujinti admin žinutę - PALIEKAME TIK IŠSIŲSTA mygtuką
-    from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-
     keyboard = [[InlineKeyboardButton("📦 IŠSIŲSTA", callback_data=f"admin_shipped_{order_id}")]]
 
     await query.message.edit_text(
@@ -276,7 +274,6 @@ async def save_to_db_callback(query, context: ContextTypes.DEFAULT_TYPE):
 
 
 # ========== CONVERSATION HANDLER ==========
-# Tai reikės įdėti į main.py registraciją
 admin_shipped_conv_handler = ConversationHandler(
     entry_points=[
         CallbackQueryHandler(admin_shipped, pattern=r"admin_shipped_\d+")
