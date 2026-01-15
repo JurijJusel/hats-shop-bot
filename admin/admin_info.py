@@ -18,10 +18,6 @@ async def admin_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("❌ Neturi teisės matyti komandų.")
         return
 
-    # INFO: Admin žiūri komandas (nebūtina, bet gali būti naudinga)
-    user_info = f"@{username}" if username else f"ID:{user_id}"
-    logger.info(f"Admin {user_info} peržiūri admin komandas")
-
     info_text = (
         "📋 Prieinamos ADMIN komandos:\n\n"
         "/add_hat - pridėti naują kepurę\n"
