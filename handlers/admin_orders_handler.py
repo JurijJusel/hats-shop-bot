@@ -1,7 +1,14 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ContextTypes, ConversationHandler, CallbackQueryHandler, MessageHandler, filters
+from telegram.ext import (ContextTypes,
+                        ConversationHandler,
+                        CallbackQueryHandler,
+                        MessageHandler,
+                        filters)
 import sqlite3
 from constants import DB_PATH
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 # ADMIN patvirtina apmokėjimą
@@ -10,6 +17,8 @@ async def admin_paid(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
 
     order_id = int(query.data.split("_")[2])  # admin_paid_123 -> 123
+
+    logger.info(f"Admin {query.from_user.id} confirmed payment for order #{order_id}")
 
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
@@ -200,6 +209,8 @@ async def save_to_db(update: Update, context: ContextTypes.DEFAULT_TYPE):
     conn.commit()
     conn.close()
 
+    logger.info(f"Order #{order_id} shipped by admin, tracking: {tracking}")
+
     # Pranešimas admin'ui
     await update.message.reply_text(
         f"✅ *Užsakymas #{order_id} išsiųstas!*\n\n"
@@ -249,6 +260,8 @@ async def save_to_db_callback(query, context: ContextTypes.DEFAULT_TYPE):
     result = cursor.fetchone()
     conn.commit()
     conn.close()
+
+    logger.info(f"Order #{order_id} shipped by admin (via skip), tracking: {tracking}")
 
     await query.message.reply_text(
         f"✅ *Užsakymas #{order_id} išsiųstas!*\n\n"

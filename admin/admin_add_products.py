@@ -6,6 +6,9 @@ from telegram.ext import (CommandHandler,
                           filters)
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from constants import ADMINS, DB_PATH
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 PHOTO, NAME, DESCRIPTION, PRICE = range(4)
@@ -13,6 +16,9 @@ PHOTO, NAME, DESCRIPTION, PRICE = range(4)
 
 async def add_product_start(update, context):
     if update.message.from_user.id not in ADMINS:
+
+        logger.info(f"Unauthorized /add_hat attempt by user {update.message.from_user.id}")
+
         await update.message.reply_text("❌ Tik admin gali pridėti prekes.")
         return ConversationHandler.END
     await update.message.reply_text("Siųskite 🧢 kepurės nuotrauką (kaip foto):")
@@ -80,6 +86,8 @@ async def add_product_price(update, context):
     ))
     conn.commit()
     conn.close()
+
+    logger.info(f"Admin {update.message.from_user.id} added product: '{context.user_data['name']}', price: ({price}€)")
 
     await update.message.reply_text(f"✅ Kepurė '{context.user_data['name']}' sėkmingai pridėta!")
     return ConversationHandler.END

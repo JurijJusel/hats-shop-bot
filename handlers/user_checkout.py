@@ -10,10 +10,13 @@ from telegram.ext import (CommandHandler,
                         ConversationHandler)
 import sqlite3
 from constants import ADMINS, DB_PATH
+import logging
 
+logger = logging.getLogger(__name__)
 
 # States for checkout
 NAME, PHONE, EMAIL, CITY, INFO = range(5)
+
 
 # Checkout (name) - SU MYGTUKU
 async def checkout_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -150,6 +153,7 @@ async def checkout_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     (user_id,))
     items = cursor.fetchall()
     if not items:
+        logger.info(f"User {user_id} checkout failed - empty cart")
         await update.message.reply_text("Krepšelis tuščias 😢")
         conn.close()
         return ConversationHandler.END
@@ -193,6 +197,8 @@ async def checkout_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
     cursor.execute("UPDATE orders SET total_price=? WHERE id=?", (total, order_id))
     conn.commit()
     conn.close()
+
+    logger.info(f"Order #{order_id} created: user={user_id}, total={total}€, items={len(items)}")
 
     # Žinutė vartotojui
     keyboard_user = [
@@ -243,12 +249,14 @@ async def checkout_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # Order cancel handler
 async def order_cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    logger.info(f"Order cancel via /cancel command by user {update.message.from_user.id}")
     await update.message.reply_text("❌ Užsakymas atšauktas.")
     return ConversationHandler.END
 
 # Order cancel handler (BUTTON version)
 async def order_cancel_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
+    logger.info(f"Order cancelled via BUTTON by user {query.from_user.id}")
     await query.answer()
     await query.message.edit_text("❌ Užsakymas atšauktas.")
     return ConversationHandler.END
@@ -259,6 +267,8 @@ async def payment_confirmed(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
 
     order_id = int(query.data.split("_")[1])
+
+    logger.info(f"Order #{order_id} marked as PAID by user {query.from_user.id}")
 
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()

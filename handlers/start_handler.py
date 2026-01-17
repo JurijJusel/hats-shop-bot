@@ -7,11 +7,16 @@ from telegram.ext import ContextTypes
 import sqlite3
 from constants import DB_PATH
 from users.user_tracker import register_or_update_user
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 # Fiksuotas klaviatūros meniu apacioje
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     register_or_update_user(update)
+
+    logger.info(f"User {update.message.from_user.id} started bot")
 
     keyboard = [
         [KeyboardButton("🧢 Kepurės"), KeyboardButton("🛒 Krepšelis")]
@@ -33,6 +38,7 @@ async def text_show_products(update: Update, context: ContextTypes.DEFAULT_TYPE)
     conn.close()
 
     if not products:
+        logger.info("No products available when user requested catalog")
         await update.message.reply_text("❌ Šiuo metu produktų nėra.")
         return
 
@@ -40,7 +46,7 @@ async def text_show_products(update: Update, context: ContextTypes.DEFAULT_TYPE)
         prod_id, name, description, price, photo = prod
 
         caption = (
-            f"\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800{name}\n\n"  
+            f"\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800{name}\n\n"
             f"📝  Info: {description}\n\n"
             f"💰 Kaina: {price:.2f}€"
         )

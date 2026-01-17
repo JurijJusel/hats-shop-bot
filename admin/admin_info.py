@@ -12,9 +12,10 @@ async def admin_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
     username = user.username
 
     if user_id not in ADMINS:
-        # WARNING: Ne-admin bandė prieiti prie admin komandų
+
         user_info = f"@{username}" if username else f"ID:{user_id}"
-        logger.warning(f"Neautorizuotas bandymas prieiti prie /info. User: {user_info}")
+        logger.info(f"Neautorizuotas bandymas prieiti prie /info. User: {user_info}")
+
         await update.message.reply_text("❌ Neturi teisės matyti komandų.")
         return
 

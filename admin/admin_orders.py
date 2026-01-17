@@ -2,11 +2,17 @@ import sqlite3
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ContextTypes
 from constants import DB_PATH, ADMINS, SHOW_ORDERS_COUNTS
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 async def show_orders_base(update: Update, context: ContextTypes.DEFAULT_TYPE, limit: int = None, only_pending: bool = False):
     user_id = update.message.from_user.id
     if user_id not in ADMINS:
+
+        logger.info(f"Unauthorized access attempt to admin /show_orders by user {user_id}")
+
         await update.message.reply_text("❌ Neturi teisės peržiūrėti užsakymų.")
         return
 
