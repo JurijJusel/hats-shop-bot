@@ -1,9 +1,20 @@
-from config import LOGS_FILE_PATH, LOGS_WARNINGS_FILE_PATH
+from constants import LOGS_FILE_PATH, LOGS_WARNINGS_FILE_PATH
+import logging
+
+# Custom filter - only INFO level
+class InfoOnlyFilter(logging.Filter):
+    def filter(self, record):
+        return record.levelno == logging.INFO
 
 
 LOGGING_CONFIG = {
     'version': 1,
     'disable_existing_loggers': False,
+    'filters': {
+        'info_only': {
+            '()': InfoOnlyFilter,
+        },
+    },
     'formatters': {
         'standard': {
             'format': (
@@ -27,7 +38,7 @@ LOGGING_CONFIG = {
             'formatter': 'standard',
         },
         'file_all': {
-            'level': 'INFO',  # INFO vietoj DEBUG
+            'level': 'INFO',
             'class': 'logging.handlers.RotatingFileHandler',
             'formatter': 'detailed',
             'filename': LOGS_FILE_PATH,
@@ -35,6 +46,7 @@ LOGGING_CONFIG = {
             'encoding': 'utf-8',
             "maxBytes": 3_145_728,  # 3MB
             "backupCount": 3,
+            'filters': ['info_only'],
         },
         'file_warning': {
             'level': 'WARNING',
@@ -78,7 +90,7 @@ LOGGING_CONFIG = {
             'level': 'WARNING',
             'propagate': True
         },
-        'httpx': {  
+        'httpx': {
             'level': 'WARNING',
             'propagate': True
         },
