@@ -1,7 +1,7 @@
 import sqlite3
 from datetime import datetime
 from telegram import Update
-from config import DB_USERS_PATH, ADMINS
+from constants import DB_USERS_PATH, ADMINS
 
 
 def register_or_update_user(update: Update):

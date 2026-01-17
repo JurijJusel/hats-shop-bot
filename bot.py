@@ -1,4 +1,6 @@
-from config import BOT_TOKEN
+import os
+from pathlib import Path
+from dotenv import load_dotenv
 from telegram.ext import (ApplicationBuilder,
                         CommandHandler,
                         CallbackQueryHandler,
@@ -6,7 +8,9 @@ from telegram.ext import (ApplicationBuilder,
                         MessageHandler)
 from admin.admin_show_users import admin_show_users
 from admin.admin_info import admin_info
-from admin.admin_orders import admin_show_orders, admin_show_orders_10, admin_show_orders_status
+from admin.admin_orders import (admin_show_orders,
+                                admin_show_orders_10,
+                                admin_show_orders_status)
 from admin.admin_add_products import (conv_add_product,
                                 admin_show_products,
                                 activate_hat,
@@ -19,8 +23,8 @@ from handlers.user_checkout import conversation_handler, payment_confirmed
 from handlers.admin_orders_handler import admin_paid, admin_shipped
 from handlers.cart_handler import show_cart, remove_from_cart, add_to_cart
 from handlers.start_handler import (start,
-                                text_show_products,
-                                text_show_cart)
+                                    text_show_products,
+                                    text_show_cart)
 import logging
 import logging.config
 from logging_err.logging_config import LOGGING_CONFIG
@@ -28,7 +32,8 @@ from logging_err.logging_config import LOGGING_CONFIG
 logging.config.dictConfig(LOGGING_CONFIG)
 logger = logging.getLogger(__name__)
 
-TOKEN = BOT_TOKEN
+load_dotenv(dotenv_path=Path(__file__).parent / '.env')
+TOKEN = (os.getenv('BOT_TOKEN'))
 
 
 if __name__ == "__main__":

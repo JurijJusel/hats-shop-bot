@@ -9,7 +9,7 @@ from telegram.ext import (CommandHandler,
                         filters,
                         ConversationHandler)
 import sqlite3
-from config import ADMINS, DB_PATH
+from constants import ADMINS, DB_PATH
 
 
 # States for checkout

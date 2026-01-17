@@ -5,7 +5,7 @@ from telegram import (Update,
                     KeyboardButton)
 from telegram.ext import ContextTypes
 import sqlite3
-from config import DB_PATH
+from constants import DB_PATH
 from users.user_tracker import register_or_update_user
 
 
@@ -40,7 +40,7 @@ async def text_show_products(update: Update, context: ContextTypes.DEFAULT_TYPE)
         prod_id, name, description, price, photo = prod
 
         caption = (
-            f"*** {name} ***\n\n"
+            f"\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800{name}\n\n"  
             f"📝  Info: {description}\n\n"
             f"💰 Kaina: {price:.2f}€"
         )

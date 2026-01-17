@@ -1,9 +1,9 @@
 from telegram import (Update,
                     InlineKeyboardButton,
-                    InlineKeyboardMarkup,)
+                    InlineKeyboardMarkup)
 from telegram.ext import ContextTypes
 import sqlite3
-from config import DB_PATH
+from constants import DB_PATH
 
 
 # Rodyti krepšelį

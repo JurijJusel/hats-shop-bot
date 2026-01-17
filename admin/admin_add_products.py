@@ -5,7 +5,7 @@ from telegram.ext import (CommandHandler,
                           ConversationHandler,
                           filters)
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from config import ADMINS, DB_PATH
+from constants import ADMINS, DB_PATH
 
 
 PHOTO, NAME, DESCRIPTION, PRICE = range(4)

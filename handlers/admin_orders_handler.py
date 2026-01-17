@@ -1,7 +1,7 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, ConversationHandler, CallbackQueryHandler, MessageHandler, filters
 import sqlite3
-from config import DB_PATH
+from constants import DB_PATH
 
 
 # ADMIN patvirtina apmokėjimą

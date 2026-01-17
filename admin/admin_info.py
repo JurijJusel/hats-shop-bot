@@ -1,7 +1,7 @@
 import logging
 from telegram import Update
 from telegram.ext import ContextTypes
-from config import ADMINS
+from constants import ADMINS
 
 logger = logging.getLogger(__name__)
 

@@ -1,6 +1,6 @@
 from telegram import Update
 from telegram.ext import ContextTypes
-from config import ADMINS
+from constants import ADMINS
 
 
 async def unknown_message(update: Update, context: ContextTypes.DEFAULT_TYPE):

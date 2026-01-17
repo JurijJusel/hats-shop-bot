@@ -1,7 +1,7 @@
 import sqlite3
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ContextTypes
-from config import DB_PATH, ADMINS, SHOW_ORDERS_COUNTS
+from constants import DB_PATH, ADMINS, SHOW_ORDERS_COUNTS
 
 
 async def show_orders_base(update: Update, context: ContextTypes.DEFAULT_TYPE, limit: int = None, only_pending: bool = False):
@@ -100,4 +100,3 @@ async def admin_show_orders_10(update: Update, context: ContextTypes.DEFAULT_TYP
 # ADMIN neužbaigti užsakymai
 async def admin_show_orders_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await show_orders_base(update, context, limit=None, only_pending=True)
-
