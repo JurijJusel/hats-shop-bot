@@ -1,12 +1,16 @@
 import sqlite3
 from telegram import Update
 from telegram.ext import ContextTypes
-from config import DB_USERS_PATH, ADMINS
+from constants import DB_USERS_PATH, ADMINS
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 async def admin_show_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.from_user.id
     if user_id not in ADMINS:
+        logger.info(f"Unauthorized access attempt to admin /show_users by user {user_id}")
         await update.message.reply_text("❌ Neturi teisės.")
         return
 

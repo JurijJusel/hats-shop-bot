@@ -1,7 +1,7 @@
 from telegram import Update, InputMediaPhoto
 from telegram.ext import ContextTypes
 import sqlite3
-from config import DB_PATH
+from constants import DB_PATH
 
 
 async def my_orders(update: Update, context: ContextTypes.DEFAULT_TYPE):

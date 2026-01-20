@@ -5,7 +5,7 @@ from pathlib import Path
 ROOT_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT_DIR))
 
-from config import DB_PATH
+from constants import DB_PATH
 
 
 def init_database():

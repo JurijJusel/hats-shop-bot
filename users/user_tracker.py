@@ -1,7 +1,10 @@
 import sqlite3
 from datetime import datetime
 from telegram import Update
-from config import DB_USERS_PATH, ADMINS
+from constants import DB_USERS_PATH, ADMINS
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def register_or_update_user(update: Update):
@@ -36,6 +39,8 @@ def register_or_update_user(update: Update):
             user.id
             )
         )
+        logger.info(f"User activity updated {user.id} - (@{user.username or 'no_username'})")
+
     else:
         # Sukuriame naują
         cursor.execute("""
@@ -53,6 +58,8 @@ def register_or_update_user(update: Update):
             now
             )
         )
+
+        logger.info(f"New user registered: {user.id} - (@{user.username or 'no_username'})")
 
     conn.commit()
     conn.close()

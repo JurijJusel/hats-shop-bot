@@ -1,6 +1,9 @@
 from telegram import Update
 from telegram.ext import ContextTypes
-from config import ADMINS
+from constants import ADMINS
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 async def unknown_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -13,6 +16,9 @@ async def unknown_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Jei admin - ignoruojam (adminas gali rašyti tekstą)
     if user_id in ADMINS:
         return
+
+    # Loginam nežinomą žinutę
+    logger.info(f"Unknown message from user {user_id}: {update.message.text[:50]}")  # pirmi 50 simbolių
 
     # Vartotojui - draugiškas pranešimas
     await update.message.reply_text(

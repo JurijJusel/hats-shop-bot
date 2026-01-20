@@ -1,9 +1,12 @@
 from telegram import (Update,
                     InlineKeyboardButton,
-                    InlineKeyboardMarkup,)
+                    InlineKeyboardMarkup)
 from telegram.ext import ContextTypes
 import sqlite3
-from config import DB_PATH
+from constants import DB_PATH
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 # Rodyti krepšelį
@@ -57,6 +60,8 @@ async def remove_from_cart(update: Update, context: ContextTypes.DEFAULT_TYPE):
     conn.commit()
     conn.close()
 
+    logger.info(f"User {user_id} removed product {prod_id} from cart")
+
     await query.message.edit_text("✅ Prekė pašalinta iš krepšelio!")
     # Iškart parodom atnaujintą krepšelį
     await show_cart(update, context)
@@ -80,6 +85,9 @@ async def add_to_cart(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if not result or result[0] == 0:
         conn.close()
+
+        logger.warning(f"User {user_id} tried to add unavailable product {product_id}")
+
         await query.edit_message_caption(
             caption="❌ **Ši kepurė jau parduota arba nebeprieinama!**\n\n"
                     "Atsiprašome, kažkas spėjo greičiau. 😔",
@@ -95,6 +103,9 @@ async def add_to_cart(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if cursor.fetchone():
         conn.close()
+
+        logger.info(f"User {user_id} tried to add duplicate product {product_id}")
+
         await query.edit_message_caption(
             caption="⚠️ **Ši kepurė jau yra jūsų krepšelyje!**",
             reply_markup=None
@@ -108,6 +119,8 @@ async def add_to_cart(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     conn.commit()
     conn.close()
+
+    logger.info(f"User {user_id} added product {product_id} to cart")
 
     await query.edit_message_caption(
         caption="✅ **Kepurė pridėta į krepšelį!**\n\n"
