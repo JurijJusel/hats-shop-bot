@@ -27,6 +27,8 @@ async def admin_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/show_orders_10 - peržiūrėti paskutinius 10 užsakymų\n"
         "/show_orders_status - peržiūrėti paskutinius neužbaigtų užsakymų\n"
         "/show_users - peržiūrėti paskutinius 50 aktyvių vartotojų\n"
+        "/ban_user - užbaninti vartotoją (pvz: /ban_user 1234567890)\n"
+        "/unban_user - atbaninti vartotoją (pvz: /unban_user 1234567890)\n"
         "/info - parodyti šį meniu"
     )
 
