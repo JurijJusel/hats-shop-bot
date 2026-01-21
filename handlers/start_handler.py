@@ -7,14 +7,16 @@ from telegram.ext import ContextTypes
 import sqlite3
 from constants import DB_PATH
 from users.user_tracker import register_or_update_user
+from admin.admin_ban_user import check_blacklist
 import logging
 
 logger = logging.getLogger(__name__)
 
 
 # Fiksuotas klaviatūros meniu apacioje
+@check_blacklist
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    register_or_update_user(update)
+    register_or_update_user(update)  # Registruoti arba atnaujinti user'io duomenis
 
     logger.info(f"User {update.message.from_user.id} started bot")
 
@@ -30,6 +32,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 # Tekstinis mygtukas "🧢 Kepurės"
+@check_blacklist
 async def text_show_products(update: Update, context: ContextTypes.DEFAULT_TYPE):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
@@ -57,6 +60,7 @@ async def text_show_products(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 
 # Tekstinis mygtukas "🛒 Krepšelis"
+@check_blacklist
 async def text_show_cart(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.from_user.id
 

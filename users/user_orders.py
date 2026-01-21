@@ -2,8 +2,10 @@ from telegram import Update, InputMediaPhoto
 from telegram.ext import ContextTypes
 import sqlite3
 from constants import DB_PATH
+from admin.admin_ban_user import check_blacklist
 
 
+@check_blacklist
 async def my_orders(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.from_user.id
 
