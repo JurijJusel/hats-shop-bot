@@ -7,6 +7,7 @@ from telegram.ext import (ApplicationBuilder,
                         filters,
                         MessageHandler)
 from admin.admin_show_users import admin_show_users
+from admin.admin_ban_user import ban_user, unban_user
 from admin.admin_info import admin_info
 from admin.admin_orders import (admin_show_orders,
                                 admin_show_orders_10,
@@ -69,6 +70,8 @@ if __name__ == "__main__":
         app.add_handler(CommandHandler("show_orders_10", admin_show_orders_10))
         app.add_handler(CommandHandler("show_orders_status", admin_show_orders_status))
         app.add_handler(CommandHandler("show_users", admin_show_users))
+        app.add_handler(CommandHandler("ban_user", ban_user))
+        app.add_handler(CommandHandler("unban_user", unban_user))
 
         # Admino užsakymų mygtukai („APMOKĖTA“ / „IŠSIŲSTA“)
         app.add_handler(admin_shipped_conv_handler)

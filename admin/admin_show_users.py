@@ -2,6 +2,7 @@ import sqlite3
 from telegram import Update
 from telegram.ext import ContextTypes
 from constants import DB_USERS_PATH, ADMINS
+from constants import LAST_ACTIVE_USERS_COUNT
 import logging
 
 logger = logging.getLogger(__name__)
@@ -37,8 +38,8 @@ async def admin_show_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     # Formuojame tekstą
-    if total_count > 50:
-        text = f"👥 *Paskutiniai 50 aktyvių vartotojų (iš {total_count}):*\n\n"
+    if total_count > LAST_ACTIVE_USERS_COUNT:
+        text = f"👥 *Paskutiniai {LAST_ACTIVE_USERS_COUNT} aktyvių vartotojų (iš {total_count}):*\n\n"
     else:
         text = f"👥 *Vartotojų sąrašas ({total_count}):*\n\n"
 
@@ -54,7 +55,7 @@ async def admin_show_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Bot emoji
         bot_emoji = "🤖" if is_bot else "👤"
 
-        # Datos SU laiku (pakeičiame T į tarpą)
+        # Datos su laiku (pakeičiame T į tarpą)
         first_datetime = first_seen[:19].replace("T", " ") if first_seen and len(first_seen) >= 19 else "?"
         last_datetime = last_seen[:19].replace("T", " ") if last_seen and len(last_seen) >= 19 else "?"
 

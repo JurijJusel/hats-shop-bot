@@ -20,5 +20,8 @@ config.py
 
 # Log files
 logs/
+logging_err/logs/
+
+# Kivy files
 .kivy
 kivy_venv/
