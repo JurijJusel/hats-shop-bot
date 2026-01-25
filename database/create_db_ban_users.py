@@ -8,7 +8,7 @@ sys.path.insert(0, str(ROOT_DIR))
 from constants import DB_BANNED_USERS
 
 
-def init_users_database():
+def init_users_ban_database():
     conn = sqlite3.connect(DB_BANNED_USERS)  # "banned_users.db"
     cursor = conn.cursor()
 
@@ -40,7 +40,7 @@ def init_users_database():
 
 
 def main():
-    init_users_database()
+    init_users_ban_database()
 
 if __name__ == "__main__":
     main()
