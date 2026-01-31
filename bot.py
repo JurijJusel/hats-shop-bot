@@ -86,10 +86,9 @@ if __name__ == "__main__":
         logger.info("Visi handler'iai užregistruoti")
         logger.info("Botas paleistas ir veikia...")
         print("Botas paleistas...")
+
         app.run_polling()
 
-    except KeyboardInterrupt:
-        logger.info("Botas sustabdytas (Ctrl+C)")
     except Exception as e:
         logger.error(f"Kritinė klaida paleidžiant botą: {e}", exc_info=True)
         raise

@@ -15,10 +15,10 @@ async def questions(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "→ 3-5 darbo dienos Lietuvoje priklauso nuot siuntos tarnybos\n\n"
 
         "<b>Kada gausiu patvirtinimą?</b>\n"
-        "→ Per 6 - 24 val. nuo užsakymo pateikimo\n\n"
+        "→ Per 1 - 8 val. nuo užsakymo pateikimo\n\n"
 
         "<b>Ar galima grąžinti ar pakeist prekę?</b>\n"
-        "→ Taip, per 14 dienų nuo gavimo\n\n"
+        "→ Taip, susisiekite dėl užsakymo pekeitimo ar grąžinimo\n\n"
 
         "<b>Kiek kainuoja pristatymas?</b>\n"
         "→ Lietuvoje pristatymas nemokamas\n\n"
