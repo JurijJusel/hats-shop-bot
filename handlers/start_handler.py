@@ -49,7 +49,7 @@ async def text_show_products(update: Update, context: ContextTypes.DEFAULT_TYPE)
         prod_id, name, description, price, photo = prod
 
         caption = (
-            f"\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800\u2800{name}\n\n"
+            f"\u2800\u2800\u2800{name}\n\n"
             f"📝  Info: {description}\n\n"
             f"💰 Kaina: {price:.2f}€"
         )

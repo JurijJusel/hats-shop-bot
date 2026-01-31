@@ -266,27 +266,51 @@ async def payment_confirmed(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
-    order_id = int(query.data.split("_")[1])
+    try:
+        order_id = int(query.data.split("_")[1])
+    except (ValueError, IndexError) as e:
+        logger.error(f"Error parsing order_id from callback_data: {query.data}, error: {e}")
+        await query.message.reply_text("❌ Klaida: Nepavyko nustatyti užsakymo ID.")
+        return
 
     logger.info(f"Order #{order_id} marked as PAID by user {query.from_user.id}")
 
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("UPDATE orders SET status='laukia patvirtinimo' WHERE id=?", (order_id,))
-    conn.commit()
-    conn.close()
+    conn = None
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("UPDATE orders SET status='laukia patvirtinimo' WHERE id=?", (order_id,))
+        conn.commit()
 
-    # Žinutė vartotojui
-    await query.message.edit_text(
-        f"✅ Užsakymas #{order_id} pažymėtas kaip APMOKĖTAS.\n"
-        f"Laukiama Admino patvirtinimo.\n\n"
-        f"📋 Stebėkite būseną ivedus komanda: /my_orders"
-    )
+        # Žinutė vartotojui
+        try:
+            await query.message.edit_text(
+                f"✅ Užsakymas #{order_id} pažymėtas kaip APMOKĖTAS.\n"
+                f"Laukiama Admino patvirtinimo.\n\n"
+                f"📋 Stebėkite būseną ivedus komanda: /my_orders"
+            )
+        except Exception as e:
+            logger.error(f"Error editing message for user {query.from_user.id}: {e}")
 
-    # Žinutė adminui
-    admin_msg = f"💰 Užsakymas #{order_id} pažymėtas kaip APMOKĖTAS.\nVartotojas laukia patvirtinimo."
-    for admin_id in ADMINS:
-        await context.bot.send_message(chat_id=admin_id, text=admin_msg)
+        # Žinutė adminui
+        admin_msg = f"💰 Užsakymas #{order_id} pažymėtas kaip APMOKĖTAS.\nVartotojas laukia patvirtinimo."
+        for admin_id in ADMINS:
+            try:
+                await context.bot.send_message(chat_id=admin_id, text=admin_msg)
+            except Exception as e:
+                logger.error(f"Error sending message to admin {admin_id}: {e}")
+
+    except sqlite3.Error as e:
+        logger.error(f"Database error in payment_confirmed for order #{order_id}: {e}")
+        await query.message.reply_text(
+            "❌ Įvyko duomenų bazės klaida. Prašome bandyti dar kartą."
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error in payment_confirmed for order #{order_id}: {e}", exc_info=True)
+        await query.message.reply_text("❌ Įvyko netikėta klaida. Prašome bandyti dar kartą.")
+    finally:
+        if conn:
+            conn.close()
 
 
 conversation_handler = ConversationHandler(

@@ -17,6 +17,7 @@ from admin.admin_add_products import (conv_add_product,
                                 activate_hat,
                                 delete_hat)
 from users.user_help import user_help
+from users.user_duk import questions
 from users.user_orders import my_orders
 from handlers.admin_orders_handler import admin_shipped_conv_handler
 from handlers.user_fallback import unknown_message
@@ -59,6 +60,7 @@ if __name__ == "__main__":
         app.add_handler(CallbackQueryHandler(payment_confirmed, pattern=r"paid_\d+"))
         app.add_handler(CommandHandler("my_orders", my_orders))
         app.add_handler(CommandHandler("help", user_help))
+        app.add_handler(CommandHandler("klausimai", questions))
 
         # admin handlers
         app.add_handler(conv_add_product)
@@ -84,10 +86,9 @@ if __name__ == "__main__":
         logger.info("Visi handler'iai užregistruoti")
         logger.info("Botas paleistas ir veikia...")
         print("Botas paleistas...")
+
         app.run_polling()
 
-    except KeyboardInterrupt:
-        logger.info("Botas sustabdytas (Ctrl+C)")
     except Exception as e:
         logger.error(f"Kritinė klaida paleidžiant botą: {e}", exc_info=True)
         raise
