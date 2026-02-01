@@ -4,11 +4,11 @@ from telegram import (Update,
                     ReplyKeyboardMarkup,
                     KeyboardButton)
 from telegram.ext import ContextTypes
-import sqlite3
 from constants import DB_PATH
 from users.user_tracker import register_or_update_user
 from admin.admin_ban_user import check_blacklist
 import logging
+from database.db_helper import db_execute
 
 logger = logging.getLogger(__name__)
 
@@ -34,11 +34,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # Tekstinis mygtukas "🧢 Kepurės"
 @check_blacklist
 async def text_show_products(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("SELECT id, name, description, price, photo_file_id FROM products WHERE available = 1")
-    products = cursor.fetchall()
-    conn.close()
+    products = db_execute(
+        "SELECT id, name, description, price, photo_file_id FROM products WHERE available = 1",
+        fetch='all',
+        db_name=DB_PATH
+    )
 
     if not products:
         logger.info("No products available when user requested catalog")
@@ -64,15 +64,15 @@ async def text_show_products(update: Update, context: ContextTypes.DEFAULT_TYPE)
 async def text_show_cart(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.from_user.id
 
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("""
+    items = db_execute("""
         SELECT p.id, p.name, p.price
         FROM cart c JOIN products p ON c.product_id=p.id
         WHERE c.user_id=?
-    """, (user_id,))
-    items = cursor.fetchall()
-    conn.close()
+        """,
+        (user_id,),
+        fetch='all',
+        db_name=DB_PATH
+    )
 
     if not items:
         await update.message.reply_text("🛒 Tavo krepšelis tuščias.")

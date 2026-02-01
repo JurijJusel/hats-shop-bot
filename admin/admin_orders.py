@@ -1,8 +1,8 @@
-import sqlite3
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ContextTypes
 from constants import DB_PATH, ADMINS, SHOW_ORDERS_COUNTS
 import logging
+from database.db_helper import db_execute
 
 logger = logging.getLogger(__name__)
 
@@ -15,9 +15,6 @@ async def show_orders_base(update: Update, context: ContextTypes.DEFAULT_TYPE, l
 
         await update.message.reply_text("❌ Neturi teisės peržiūrėti užsakymų.")
         return
-
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
 
     if only_pending:
         # TIK neužbaigti užsakymai
@@ -38,28 +35,29 @@ async def show_orders_base(update: Update, context: ContextTypes.DEFAULT_TYPE, l
     # Pridėti LIMIT jei reikia
     if limit:
         sql += " LIMIT ?"
-        cursor.execute(sql, (limit,))
+        orders = db_execute(sql, (limit,), fetch='all', db_name=DB_PATH)
     else:
-        cursor.execute(sql)
-
-    orders = cursor.fetchall()
+        orders = db_execute(sql, fetch='all', db_name=DB_PATH)
 
     if not orders:
         msg = "📭 Nėra laukiančių užsakymų." if only_pending else "📭 Užsakymų nėra."
         await update.message.reply_text(msg)
-        conn.close()
         return
 
     for order in orders:
         order_id, user_name, phone, email, city, info, total, status, tracking, payment, notes = order
 
         # Gaunam prekes iš order_items
-        cursor.execute("""
+        items = db_execute(
+            """
             SELECT product_name, price_per_unit
             FROM order_items
             WHERE order_id=?
-        """, (order_id,))
-        items = cursor.fetchall()
+            """,
+            (order_id,),
+            fetch='all',
+            db_name=DB_PATH
+        )
 
         # Suformuojam prekių tekstą
         items_text = ""
@@ -91,8 +89,6 @@ async def show_orders_base(update: Update, context: ContextTypes.DEFAULT_TYPE, l
         reply_markup = InlineKeyboardMarkup(keyboard_admin) if keyboard_admin else None
 
         await update.message.reply_text(text=admin_text, reply_markup=reply_markup)
-
-    conn.close()
 
 
 # ADMIN visi užsakymai

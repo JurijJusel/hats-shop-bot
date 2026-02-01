@@ -1,9 +1,9 @@
-import sqlite3
 from telegram import Update
 from telegram.ext import ContextTypes
 from constants import DB_USERS_PATH, ADMINS
 from constants import LAST_ACTIVE_USERS_COUNT
 import logging
+from database.db_helper import db_execute
 
 logger = logging.getLogger(__name__)
 
@@ -15,23 +15,25 @@ async def admin_show_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("❌ Neturi teisės.")
         return
 
-    conn = sqlite3.connect(DB_USERS_PATH)
-    cursor = conn.cursor()
-
     # Gauname paskutinius 50 pagal last_seen (paskutinį aktyvumą)
-    cursor.execute("""
+    users = db_execute("""
         SELECT user_id, username, first_name, last_name, first_seen, last_seen, is_bot
         FROM users
         ORDER BY last_seen DESC
         LIMIT 50
-    """)
-    users = cursor.fetchall()
+        """,
+        fetch='all',
+        db_name=DB_USERS_PATH
+    )
 
     # Skaičiuojame bendrą kiekį
-    cursor.execute("SELECT COUNT(*) FROM users")
-    total_count = cursor.fetchone()[0]
+    total_count_result = db_execute(
+        "SELECT COUNT(*) FROM users",
+        fetch='one',
+        db_name=DB_USERS_PATH
+    )
 
-    conn.close()
+    total_count = total_count_result[0] if total_count_result else 0
 
     if not users:
         await update.message.reply_text("📭 Vartotojų nėra.")

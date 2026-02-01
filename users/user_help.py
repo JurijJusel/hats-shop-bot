@@ -8,7 +8,7 @@ async def user_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     info_text = (
         "📋 Prieinamos komandos:\n\n"
         "/my_orders - peržiūrėti mano užsakymus\n"
-        "/cancel - atšaukti užsakymą"
+        "/cancel - atšaukti užsakymą\n"
         "/klausimai - dažniausiai užduodami klausimai ir kontaktai\n"
         "/help - parodyti šį meniu\n"
     )
