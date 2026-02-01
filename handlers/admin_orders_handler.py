@@ -4,9 +4,9 @@ from telegram.ext import (ContextTypes,
                         CallbackQueryHandler,
                         MessageHandler,
                         filters)
-import sqlite3
 from constants import DB_PATH
 import logging
+from database.db_helper import db_execute
 
 logger = logging.getLogger(__name__)
 
@@ -25,48 +25,49 @@ async def admin_paid(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     logger.info(f"Admin {query.from_user.id} confirmed payment for order #{order_id}")
 
-    conn = None
+    # Atnaujiname užsakymo statusą
+    success = db_execute(
+        "UPDATE orders SET status='apmoketa' WHERE id=?",
+        (order_id,),
+        db_name=DB_PATH
+    )
+
+    if not success:
+        logger.error(f"Database error in admin_paid for order #{order_id}")
+        await query.message.reply_text(
+            "❌ Įvyko duomenų bazės klaida. Prašome bandyti dar kartą arba susisiekti su administratoriumi."
+        )
+        return
+
+    # Gauname user_id
+    result = db_execute(
+        "SELECT user_id FROM orders WHERE id=?",
+        (order_id,),
+        fetch='one',
+        db_name=DB_PATH
+    )
+
+    if result:
+        user_id = result[0]
+        # Pranešimas user'iui
+        try:
+            await context.bot.send_message(
+                chat_id=user_id,
+                text = f"✅ Jūsų užsakymas #{order_id} patvirtintas kaip APMOKĖTAS!\n\n"
+                        f"📋 Stebėkite būseną bet kada ivedus komanda: /my_orders"
+            )
+        except Exception as e:
+            logger.error(f"Error sending message to user {user_id}: {e}")
+
+    # Atnaujinti admin žinutę - PALIEKAME TIK IŠSIŲSTA mygtuką
+    keyboard = [[InlineKeyboardButton("📦 IŠSIŲSTA", callback_data=f"admin_shipped_{order_id}")]]
     try:
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        cursor.execute("UPDATE orders SET status='apmoketa' WHERE id=?", (order_id,))
-
-        # Gauname user_id
-        cursor.execute("SELECT user_id FROM orders WHERE id=?", (order_id,))
-        result = cursor.fetchone()
-        conn.commit()
-
-        if result:
-            user_id = result[0]
-            # Pranešimas user'iui
-            try:
-                await context.bot.send_message(
-                    chat_id=user_id,
-                    text = f"✅ Jūsų užsakymas #{order_id} patvirtintas kaip APMOKĖTAS!\n\n"
-                            f"📋 Stebėkite būseną bet kada ivedus komanda: /my_orders"
-                )
-            except Exception as e:
-                logger.error(f"Error sending message to user {user_id}: {e}")
-
-        # Atnaujinti admin žinutę - PALIEKAME TIK IŠSIŲSTA mygtuką
-        keyboard = [[InlineKeyboardButton("📦 IŠSIŲSTA", callback_data=f"admin_shipped_{order_id}")]]
-
         await query.message.edit_text(
             query.message.text, #+ f"\n\n✅ Apmokėjimas patvirtintas!",
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
-
-    except sqlite3.Error as e:
-        logger.error(f"Database error in admin_paid for order #{order_id}: {e}")
-        await query.message.reply_text(
-            "❌ Įvyko duomenų bazės klaida. Prašome bandyti dar kartą arba susisiekti su administratoriumi."
-        )
     except Exception as e:
-        logger.error(f"Unexpected error in admin_paid for order #{order_id}: {e}", exc_info=True)
-        await query.message.reply_text("❌ Įvyko netikėta klaida. Prašome bandyti dar kartą.")
-    finally:
-        if conn:
-            conn.close()
+        logger.error(f"Error editing admin message for order #{order_id}: {e}")
 
 
 # States
@@ -220,74 +221,73 @@ async def save_to_db(update_or_query, context: ContextTypes.DEFAULT_TYPE):
                 )
             return ConversationHandler.END
 
-        conn = None
-        try:
-            conn = sqlite3.connect(DB_PATH)
-            cursor = conn.cursor()
-
             # UPDATE orders
-            cursor.execute("""
+        success = db_execute(
+            """
                 UPDATE orders
                 SET status='issiusta',
                     tracking_number=?,
                     payment_info=?,
                     notes=?
                 WHERE id=?
-            """, (tracking, payment, notes, order_id))
+            """,
+            (tracking, payment, notes, order_id),
+            db_name=DB_PATH
+        )
 
-            # Gauname user_id pranešimui
-            cursor.execute("SELECT user_id FROM orders WHERE id=?", (order_id,))
-            result = cursor.fetchone()
-            conn.commit()
-
-            logger.info(f"Order #{order_id} shipped by admin, tracking: {tracking}")
-
-            # Nustatome, kaip siųsti pranešimą - ar per update.message, ar per query.message
-            # Abi Update ir CallbackQuery turi .message atributą
-            if hasattr(update_or_query, 'message'):
-                message = update_or_query.message
-            else:
-                # Fallback - neturėtų atsitikti
-                logger.error(f"Unexpected type in save_to_db: {type(update_or_query)}")
-                message = None
-
-            # Pranešimas admin'ui
-            if message:
-                try:
-                    await message.reply_text(
-                        f"✅ *Užsakymas #{order_id} išsiųstas!*\n\n"
-                        f"📦 Tracking: `{tracking}`\n"
-                        f"💳 Payment: {payment or '—'}\n"
-                        f"📝 Notes: {notes or '—'}",
-                        parse_mode="Markdown"
-                    )
-                except Exception as e:
-                    logger.error(f"Error sending message to admin: {e}")
-
-            # Pranešimas user'iui
-            if result:
-                user_id = result[0]
-                try:
-                    await context.bot.send_message(
-                        chat_id=user_id,
-                        text=f"📦 Jūsų užsakymas #{order_id} IŠSIŲSTAS! 🚚\n"
-                             f"Sekimo numeris: {tracking}\n\n"
-                             f"Ačiū kad pirkote!\n\n"
-                             f"📋 Peržiūrėti užsakymus: /my_orders"
-                    )
-                except Exception as e:
-                    logger.error(f"Error sending message to user {user_id}: {e}")
-
-        except sqlite3.Error as e:
-            logger.error(f"Database error in save_to_db for order #{order_id}: {e}")
+        if not success:
+            logger.error(f"Database error in save_to_db for order #{order_id}")
             if hasattr(update_or_query, 'message'):
                 await update_or_query.message.reply_text(
                     "❌ Įvyko duomenų bazės klaida. Prašome bandyti dar kartą."
                 )
             return ConversationHandler.END
-        finally:
-            if conn:
-                conn.close()
+
+        # Gauname user_id pranešimui
+        result = db_execute(
+            "SELECT user_id FROM orders WHERE id=?",
+            (order_id,),
+            fetch='one',
+            db_name=DB_PATH
+        )
+
+        logger.info(f"Order #{order_id} shipped by admin, tracking: {tracking}")
+
+        # Nustatome, kaip siųsti pranešimą - ar per update.message, ar per query.message
+        # Abi Update ir CallbackQuery turi .message atributą
+        if hasattr(update_or_query, 'message'):
+            message = update_or_query.message
+        else:
+            # Fallback - neturėtų atsitikti
+            logger.error(f"Unexpected type in save_to_db: {type(update_or_query)}")
+            message = None
+
+        # Pranešimas admin'ui
+        if message:
+            try:
+                await message.reply_text(
+                    f"✅ *Užsakymas #{order_id} išsiųstas!*\n\n"
+                    f"📦 Tracking: `{tracking}`\n"
+                    f"💳 Payment: {payment or '—'}\n"
+                    f"📝 Notes: {notes or '—'}",
+                    parse_mode="Markdown"
+                )
+            except Exception as e:
+                logger.error(f"Error sending message to admin: {e}")
+
+        # Pranešimas user'iui
+        if result:
+            user_id = result[0]
+            try:
+                await context.bot.send_message(
+                    chat_id=user_id,
+                    text=f"📦 Jūsų užsakymas #{order_id} IŠSIŲSTAS! 🚚\n"
+                            f"Sekimo numeris: {tracking}\n\n"
+                            f"Ačiū kad pirkote!\n\n"
+                            f"📋 Peržiūrėti užsakymus: /my_orders"
+                )
+            except Exception as e:
+                logger.error(f"Error sending message to user {user_id}: {e}")
 
         # Išvalome context
         context.user_data.clear()
@@ -305,7 +305,7 @@ async def save_to_db(update_or_query, context: ContextTypes.DEFAULT_TYPE):
                 pass
         return ConversationHandler.END
 
-
+   
 # ========== CONVERSATION HANDLER ==========
 admin_shipped_conv_handler = ConversationHandler(
     entry_points=[

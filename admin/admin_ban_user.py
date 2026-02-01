@@ -1,9 +1,9 @@
 import logging
-import sqlite3
 from telegram import Update
 from telegram.ext import ContextTypes
 from constants import ADMINS, DB_BANNED_USERS
 from functools import wraps
+from database.db_helper import db_execute
 
 logger = logging.getLogger(__name__)
 
@@ -11,13 +11,16 @@ logger = logging.getLogger(__name__)
 # ===== FUNKCIJA: Patikrinti ar user'is blacklist'e =====
 def is_user_banned(user_id: int) -> bool:
     """Tikrina ar user_id yra blacklist lentelėje"""
-    with sqlite3.connect(DB_BANNED_USERS) as conn:
-        cursor = conn.cursor()
-        cursor.execute("SELECT user_id FROM blacklist WHERE user_id = ?", (user_id,))
-        result = cursor.fetchone()
-        return result is not None
+    result = db_execute(
+        "SELECT user_id FROM blacklist WHERE user_id = ?",
+        (user_id,),
+        fetch='one',
+        db_name=DB_BANNED_USERS
+    )
+    return result is not None
 
 
+# ===== DECORATORIUS: Tikrinti ar user'is užbanintas =====
 def check_blacklist(func):
     """
     Decorator'ius tikrinti ar user'is užbanintas.
@@ -95,18 +98,17 @@ async def ban_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"⚠️ User {user_to_ban} jau yra ban liste!")
         return
 
-    # Įrašyti į blacklist
-    with sqlite3.connect(DB_BANNED_USERS) as conn:
-        cursor = conn.cursor()
-        try:
-            cursor.execute(
-                "INSERT INTO blacklist (user_id, banned_by) VALUES (?, ?)",
-                (user_to_ban, admin_id)
-            )
-            conn.commit()
-            await update.message.reply_text(f"✅ User {user_to_ban} užbanintas!")
-        except sqlite3.Error as e:
-            await update.message.reply_text(f"❌ Klaida: {e}")
+     # Įrašyti į blacklist
+    success = db_execute(
+        "INSERT INTO blacklist (user_id, banned_by) VALUES (?, ?)",
+        (user_to_ban, admin_id),
+        db_name=DB_BANNED_USERS
+    )
+
+    if success:
+        await update.message.reply_text(f"✅ User {user_to_ban} užbanintas!")
+    else:
+        await update.message.reply_text("❌ Klaida bandant ban user!")
 
 
 # ===== KOMANDA: /unban_user =====
@@ -142,12 +144,15 @@ async def unban_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"⚠️ User {user_to_unban} nėra ban liste!")
         return
 
+
     # Ištrinti iš blacklist
-    with sqlite3.connect(DB_BANNED_USERS) as conn:
-        cursor = conn.cursor()
-        try:
-            cursor.execute("DELETE FROM blacklist WHERE user_id = ?", (user_to_unban,))
-            conn.commit()
-            await update.message.reply_text(f"✅ User {user_to_unban} pašalintas iš ban listo!")
-        except sqlite3.Error as e:
-            await update.message.reply_text(f"❌ Klaida: {e}")
+    success = db_execute(
+        "DELETE FROM blacklist WHERE user_id = ?",
+        (user_to_unban,),
+        db_name=DB_BANNED_USERS
+    )
+
+    if success:
+        await update.message.reply_text(f"✅ User {user_to_unban} pašalintas iš ban listo!")
+    else:
+        await update.message.reply_text("❌ Klaida šalinant userį!")

@@ -8,9 +8,9 @@ from telegram.ext import (CommandHandler,
                         ContextTypes,
                         filters,
                         ConversationHandler)
-import sqlite3
 from constants import ADMINS, DB_PATH
 import logging
+from database.db_helper import db_execute
 
 logger = logging.getLogger(__name__)
 
@@ -142,49 +142,70 @@ async def checkout_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data['info'] = update.message.text
     user_id = update.message.from_user.id
 
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
+    #conn = sqlite3.connect(DB_PATH)
+    #cursor = conn.cursor()
 
-    cursor.execute("""
-                SELECT p.id, p.name, p.price, p.photo_file_id
-                FROM cart c
-                JOIN products p ON c.product_id = p.id
-                WHERE c.user_id = ?""",
-                    (user_id,))
-    items = cursor.fetchall()
+    items = db_execute(
+        """
+        SELECT p.id, p.name, p.price, p.photo_file_id
+        FROM cart c
+        JOIN products p ON c.product_id = p.id
+        WHERE c.user_id = ?
+        """,
+        (user_id,),
+        fetch='all',
+        db_name=DB_PATH
+    )
+
     if not items:
         logger.info(f"User {user_id} checkout failed - empty cart")
         await update.message.reply_text("Krepšelis tuščias 😢")
-        conn.close()
+
         return ConversationHandler.END
 
     # Sukuriame order
-    cursor.execute("""INSERT INTO orders
-                   (user_id, user_name, phone, email, info, city)
-                   VALUES (?,?,?,?,?,?)""",
-                   (user_id,
-                    context.user_data['name'],
-                    context.user_data['phone'],
-                    context.user_data['email'],
-                    context.user_data['info'],
-                    context.user_data['city']))
+    order_id = db_execute(
+        """
+        INSERT INTO orders
+        (user_id, user_name, phone, email, info, city)
+        VALUES (?,?,?,?,?,?)
+        """,
+        (user_id,
+        context.user_data['name'],
+        context.user_data['phone'],
+        context.user_data['email'],
+        context.user_data['info'],
+        context.user_data['city']),
+        fetch='lastrowid',
+        db_name=DB_PATH,
+        )
 
-    order_id = cursor.lastrowid
+    if not order_id:
+        logger.error(f"Failed to create order for user {user_id}")
+        await update.message.reply_text("❌ Įvyko klaida kuriant užsakymą. Bandykite dar kartą.")
+        return ConversationHandler.END
 
     total = 0
     products_text = ""
     media = []
 
-    for it in items:
-        prod_id, name, price, photo_id = it
-
-        cursor.execute("""
+    for prod_id, name, price, photo_id in items:
+        db_execute(
+            """
             INSERT INTO order_items
             (order_id, product_id, product_name, price_per_unit, photo_file_id)
             VALUES (?,?,?,?,?)
-        """, (order_id, prod_id, name, price, photo_id))
+            """,
+            (order_id, prod_id, name, price, photo_id),
+            db_name=DB_PATH
+        )
 
-        cursor.execute("UPDATE products SET available=0 WHERE id=?", (prod_id,))
+        # Pažymime produktą kaip nepasiekiamą
+        db_execute(
+            "UPDATE products SET available=0 WHERE id=?",
+            (prod_id,),
+            db_name=DB_PATH
+        )
 
         total += price
         products_text += f" – {name}: {price} €\n"
@@ -192,11 +213,18 @@ async def checkout_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
             media.append(InputMediaPhoto(media=photo_id, caption=name))
 
     # Išvalom cart
-    cursor.execute("DELETE FROM cart WHERE user_id=?", (user_id,))
+    db_execute(
+        "DELETE FROM cart WHERE user_id=?",
+        (user_id,),
+        db_name=DB_PATH
+    )
+
     # Atnaujinam total_price
-    cursor.execute("UPDATE orders SET total_price=? WHERE id=?", (total, order_id))
-    conn.commit()
-    conn.close()
+    db_execute(
+        "UPDATE orders SET total_price=? WHERE id=?",
+        (total, order_id),
+        db_name=DB_PATH
+    )
 
     logger.info(f"Order #{order_id} created: user={user_id}, total={total}€, items={len(items)}")
 
@@ -275,42 +303,36 @@ async def payment_confirmed(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     logger.info(f"Order #{order_id} marked as PAID by user {query.from_user.id}")
 
-    conn = None
-    try:
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        cursor.execute("UPDATE orders SET status='laukia patvirtinimo' WHERE id=?", (order_id,))
-        conn.commit()
+    success = db_execute(
+        "UPDATE orders SET status='laukia patvirtinimo' WHERE id=?",
+        (order_id,),
+        db_name=DB_PATH
+    )
 
-        # Žinutė vartotojui
-        try:
-            await query.message.edit_text(
-                f"✅ Užsakymas #{order_id} pažymėtas kaip APMOKĖTAS.\n"
-                f"Laukiama Admino patvirtinimo.\n\n"
-                f"📋 Stebėkite būseną ivedus komanda: /my_orders"
-            )
-        except Exception as e:
-            logger.error(f"Error editing message for user {query.from_user.id}: {e}")
-
-        # Žinutė adminui
-        admin_msg = f"💰 Užsakymas #{order_id} pažymėtas kaip APMOKĖTAS.\nVartotojas laukia patvirtinimo."
-        for admin_id in ADMINS:
-            try:
-                await context.bot.send_message(chat_id=admin_id, text=admin_msg)
-            except Exception as e:
-                logger.error(f"Error sending message to admin {admin_id}: {e}")
-
-    except sqlite3.Error as e:
-        logger.error(f"Database error in payment_confirmed for order #{order_id}: {e}")
+    if not success:
+        logger.error(f"Database error in payment_confirmed for order #{order_id}")
         await query.message.reply_text(
             "❌ Įvyko duomenų bazės klaida. Prašome bandyti dar kartą."
         )
+        return
+
+    # Žinutė vartotojui
+    try:
+        await query.message.edit_text(
+            f"✅ Užsakymas #{order_id} pažymėtas kaip APMOKĖTAS.\n"
+            f"Laukiama Admino patvirtinimo.\n\n"
+            f"📋 Stebėkite būseną ivedus komanda: /my_orders"
+        )
     except Exception as e:
-        logger.error(f"Unexpected error in payment_confirmed for order #{order_id}: {e}", exc_info=True)
-        await query.message.reply_text("❌ Įvyko netikėta klaida. Prašome bandyti dar kartą.")
-    finally:
-        if conn:
-            conn.close()
+        logger.error(f"Error editing message for user {query.from_user.id}: {e}")
+
+    # Žinutė adminui
+    admin_msg = f"💰 Užsakymas #{order_id} pažymėtas kaip APMOKĖTAS.\nVartotojas laukia patvirtinimo."
+    for admin_id in ADMINS:
+        try:
+            await context.bot.send_message(chat_id=admin_id, text=admin_msg)
+        except Exception as e:
+            logger.error(f"Error sending message to admin {admin_id}: {e}")
 
 
 conversation_handler = ConversationHandler(

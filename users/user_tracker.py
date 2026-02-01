@@ -1,8 +1,8 @@
-import sqlite3
 from datetime import datetime
 from telegram import Update
 from constants import DB_USERS_PATH, ADMINS
 import logging
+from database.db_helper import db_execute
 
 logger = logging.getLogger(__name__)
 
@@ -15,51 +15,60 @@ def register_or_update_user(update: Update):
     if not user or user.id in ADMINS:
         return
 
-    conn = sqlite3.connect(DB_USERS_PATH)
-    cursor = conn.cursor()
-
     # Patikrinam, ar vartotojas jau yra
-    cursor.execute("SELECT user_id FROM users WHERE user_id=?", (user.id,))
-    exists = cursor.fetchone()
+    user_exists = db_execute(
+        "SELECT user_id FROM users WHERE user_id=?",
+        (user.id,),
+        fetch='one',
+        db_name=DB_USERS_PATH
+    )
 
     now = datetime.now().isoformat()
 
-    if exists:
+    if user_exists:
         # Atnaujinam last_seen ir kitus duomenis
-        cursor.execute("""
+        success = db_execute(
+            """
             UPDATE users
             SET last_seen=?, username=?, first_name=?, last_name=?, is_bot=?
             WHERE user_id=?
-        """, (
-            now,
-            user.username,
-            user.first_name,
-            user.last_name,
-            1 if user.is_bot else 0,
-            user.id
+            """,
+            (
+                now,
+                user.username,
+                user.first_name,
+                user.last_name,
+                1 if user.is_bot else 0,
+                user.id
             )
         )
-        logger.info(f"User activity updated {user.id} - (@{user.username or 'no_username'})")
+
+        if success:
+            logger.info(f"User activity updated {user.id} - (@{user.username or 'no_username'})")
+        else:
+            logger.error(f"Failed to update user activity: {user.id}")
 
     else:
         # Sukuriame naują
-        cursor.execute("""
+        success = db_execute(
+            """
             INSERT INTO users
             (user_id, username, first_name, last_name, language_code, is_bot, first_seen, last_seen)
             VALUES (?,?,?,?,?,?,?,?)
-        """, (
-            user.id,
-            user.username,
-            user.first_name,
-            user.last_name,
-            user.language_code,
-            1 if user.is_bot else 0,
-            now,
-            now
+            """,
+            (
+                user.id,
+                user.username,
+                user.first_name,
+                user.last_name,
+                user.language_code,
+                1 if user.is_bot else 0,
+                now,
+                now
             )
         )
 
-        logger.info(f"New user registered: {user.id} - (@{user.username or 'no_username'})")
-
-    conn.commit()
-    conn.close()
+        if success:
+            logger.info(f"New user registered: {user.id} - (@{user.username or 'no_username'})")
+        else:
+            logger.error(f"Failed to register new user: {user.id}")

@@ -1,4 +1,3 @@
-import sqlite3
 from telegram.ext import (CommandHandler,
                           ContextTypes,
                           MessageHandler,
@@ -7,6 +6,7 @@ from telegram.ext import (CommandHandler,
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from constants import ADMINS, DB_PATH
 import logging
+from database.db_helper import db_execute
 
 logger = logging.getLogger(__name__)
 
@@ -73,23 +73,27 @@ async def add_product_price(update, context):
         return PRICE
     context.user_data['price'] = price
 
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("""
+    success = db_execute(
+        """
         INSERT INTO products(name, description, price, photo_file_id)
-        VALUES (?, ?, ?, ?)""",
+        VALUES (?, ?, ?, ?)
+        """,
         (
-        context.user_data['name'],
-        context.user_data['description'],
-        context.user_data['price'],
-        context.user_data['photo_file_id']
-    ))
-    conn.commit()
-    conn.close()
+            context.user_data['name'],
+            context.user_data['description'],
+            context.user_data['price'],
+            context.user_data['photo_file_id']
+        ),
+        db_name=DB_PATH
+    )
 
-    logger.info(f"Admin {update.message.from_user.id} added product: '{context.user_data['name']}', price: ({price}€)")
+    if success:
+        logger.info(f"Admin {update.message.from_user.id} added product: '{context.user_data['name']}', price: ({price}€)")
+        await update.message.reply_text(f"✅ Kepurė '{context.user_data['name']}' sėkmingai pridėta!")
+    else:
+        await update.message.reply_text("❌ Klaida pridedant kepurę!")
+        logger.error(f"Failed to add product: {context.user_data.get('name')}")
 
-    await update.message.reply_text(f"✅ Kepurė '{context.user_data['name']}' sėkmingai pridėta!")
     return ConversationHandler.END
 
 
@@ -103,16 +107,16 @@ async def admin_show_products(update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("❌ Tik admin gali matyti produktų sąrašą.")
         return
 
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute(
+    #conn = sqlite3.connect(DB_PATH)
+    #cursor = conn.cursor()
+    products = db_execute(
         """
         SELECT id, name, description, price, photo_file_id, category, available, created_date
         FROM products
-        """
+        """,
+        fetch='all',
+        db_name=DB_PATH
     )
-    products = cursor.fetchall()
-    conn.close()
 
     if not products:
         await update.message.reply_text("❌ Šiuo metu produktų nėra.")
@@ -159,28 +163,35 @@ async def delete_hat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Gauname ID iš callback_data
     hat_id = int(query.data.split("_")[2])
 
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-
     # Tikrinam ar kepurė egzistuoja
-    cursor.execute("SELECT name FROM products WHERE id=?", (hat_id,))
-    product = cursor.fetchone()
+    product = db_execute(
+        "SELECT name FROM products WHERE id=?",
+        (hat_id,),
+        fetch='one',
+        db_name=DB_PATH
+    )
 
     if not product:
         await query.message.reply_text("❌ Kepurė nerasta.")
-        conn.close()
         return
 
     product_name = product[0]
 
     # Ištriname kepurę
-    cursor.execute("DELETE FROM products WHERE id=?", (hat_id,))
-    conn.commit()
-    conn.close()
+    del_success = db_execute(
+        "DELETE FROM products WHERE id=?",
+        (hat_id,),
+        db_name=DB_PATH
+    )
 
-    # Ištriname seną žinutę ir siunčiame naują
-    await query.message.delete()  # ✅ Ištriname seną žinutę su nuotrauka
-    await query.message.reply_text(f"✅ Kepurė '{product_name}' (ID: {hat_id}) sėkmingai ištrinta!")
+    if del_success:
+        logger.info(f"Admin {query.from_user.id} deleted product: '{product_name}' (ID: {hat_id})")
+        # Ištriname seną žinutę ir siunčiame naują
+        await query.message.delete()
+        await query.message.reply_text(f"✅ Kepurė '{product_name}' (ID: {hat_id}) sėkmingai ištrinta!")
+    else:
+        logger.error(f"Failed to delete product: '{product_name}' (ID: {hat_id}) by admin {query.from_user.id}")
+        await query.message.reply_text(f"❌ Klaida trinant kepurę '{product_name}'!")
 
 
 async def activate_hat(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -195,34 +206,40 @@ async def activate_hat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Gauname ID iš callback_data
     hat_id = int(query.data.split("_")[2])
 
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-
     # Tikrinam ar kepurė egzistuoja
-    cursor.execute("SELECT name, available FROM products WHERE id=?", (hat_id,))
-    product = cursor.fetchone()
+    product = db_execute(
+        "SELECT name, available FROM products WHERE id=?",
+        (hat_id,),
+        fetch='one',
+        db_name=DB_PATH
+    )
 
     if not product:
         await query.message.reply_text("❌ Kepurė nerasta.")
-        conn.close()
         return
 
     product_name, available = product
 
     if available == 1:
         await query.message.reply_text("⚠️ Ši kepurė jau aktyvi!")
-        conn.close()
         return
 
     # Aktyvuojame kepurę
-    cursor.execute("UPDATE products SET available=1 WHERE id=?", (hat_id,))
-    conn.commit()
-    conn.close()
+    hat_active_success = db_execute(
+        "UPDATE products SET available=1 WHERE id=?",
+        (hat_id,),
+        db_name=DB_PATH
+    )
 
-    # Ištriname seną žinutę ir siunčiame naują
-    await query.message.delete()
-    await query.message.reply_text(f"✅ Kepurė '{product_name}' (ID: {hat_id}) sėkmingai aktyvuota!")
-
+    if hat_active_success:
+        logger.info(f"Admin {query.from_user.id} activated product: '{product_name}' (ID: {hat_id})")
+        # Ištriname seną žinutę ir siunčiame naują
+        await query.message.delete()
+        await query.message.reply_text(f"✅ Kepurė '{product_name}' (ID: {hat_id}) sėkmingai aktyvuota!")
+    else:
+        logger.error(f"Failed to activate product: '{product_name}' (ID: {hat_id}) by admin {query.from_user.id}")
+        await query.message.reply_text(f"❌ Klaida aktyvuojant kepurę '{product_name}'!")
+   
 
 conv_add_product = ConversationHandler(
     entry_points=[CommandHandler("add_hat", add_product_start)],

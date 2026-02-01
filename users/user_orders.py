@@ -1,39 +1,42 @@
 from telegram import Update, InputMediaPhoto
 from telegram.ext import ContextTypes
-import sqlite3
 from constants import DB_PATH
 from admin.admin_ban_user import check_blacklist
+from database.db_helper import db_execute
 
 
 @check_blacklist
 async def my_orders(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.from_user.id
 
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-
     # Paimam visus vartotojo užsakymus
-    cursor.execute("""
+    orders = db_execute("""
         SELECT id, order_date, status, total_price, tracking_number
         FROM orders
         WHERE user_id=?
         ORDER BY id DESC
-    """, (user_id,))
-    orders = cursor.fetchall()
+        """,
+        (user_id,),
+        fetch='all',
+        db_name=DB_PATH
+    )
 
     if not orders:
         await update.message.reply_text("📭 Jūs dar neturite užsakymų.")
-        conn.close()
         return
 
     for order_id, order_date, status, total, tracking_number in orders:
         # Gaunam prekes
-        cursor.execute("""
+        items = db_execute(
+            """
             SELECT product_name, price_per_unit, photo_file_id
             FROM order_items
             WHERE order_id=?
-        """, (order_id,))
-        items = cursor.fetchall()
+            """,
+            (order_id,),
+            fetch='all',
+            db_name=DB_PATH
+        )
 
         # Status emoji
         if status == "naujas" or status == "laukia patvirtinimo":
@@ -83,4 +86,3 @@ async def my_orders(update: Update, context: ContextTypes.DEFAULT_TYPE):
             # Jei nėra nuotraukų - siųsti tik tekstą
             await update.message.reply_text(text, parse_mode="Markdown")
 
-    conn.close()
