@@ -38,7 +38,7 @@ load_dotenv(dotenv_path=Path(__file__).parent / '.env')
 TOKEN = (os.getenv('BOT_TOKEN'))
 
 
-if __name__ == "__main__":
+def main():
     try:
         logger.info("Botas inicializuojamas...")
         app = ApplicationBuilder().token(TOKEN).build()
@@ -94,3 +94,7 @@ if __name__ == "__main__":
         raise
     finally:
         logger.info("Botas uždaromas...")
+
+
+if __name__ == "__main__":
+    main()
