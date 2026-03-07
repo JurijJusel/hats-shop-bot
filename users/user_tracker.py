@@ -40,7 +40,8 @@ def register_or_update_user(update: Update):
                 user.last_name,
                 1 if user.is_bot else 0,
                 user.id
-            )
+            ),
+            db_name=DB_USERS_PATH,
         )
 
         if success:
@@ -65,7 +66,8 @@ def register_or_update_user(update: Update):
                 1 if user.is_bot else 0,
                 now,
                 now
-            )
+            ),
+            db_name=DB_USERS_PATH
         )
 
         if success:
